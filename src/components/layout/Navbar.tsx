@@ -26,7 +26,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onTabChange }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navigationItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: Home },
+    { id: 'adventure', label: 'Adventure', icon: Home },
     { id: 'shadows', label: 'My Shadows', icon: Users },
     { id: 'forge', label: 'Shadow Forge', icon: Sparkles },
     { id: 'battle', label: 'Battle Arena', icon: Sword },

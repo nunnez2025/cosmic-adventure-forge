@@ -1,17 +1,17 @@
 import { useState } from 'react';
 import { Navbar } from '@/components/layout/Navbar';
-import { Dashboard } from '@/components/game/Dashboard';
 import { ShadowManagement } from '@/components/game/ShadowManagement';
 import { ShadowCreation } from '@/components/game/ShadowCreation';
 import { BattleArena } from '@/components/game/BattleArena';
+import { AdventureMap } from '@/components/adventure/AdventureMap';
 
 export const GamePage: React.FC = () => {
-  const [currentTab, setCurrentTab] = useState('dashboard');
+  const [currentTab, setCurrentTab] = useState('adventure');
 
   const renderCurrentTab = () => {
     switch (currentTab) {
-      case 'dashboard':
-        return <Dashboard />;
+      case 'adventure':
+        return <AdventureMap onStageSelect={() => {}} />;
       case 'shadows':
         return <ShadowManagement />;
       case 'forge':
@@ -19,7 +19,7 @@ export const GamePage: React.FC = () => {
       case 'battle':
         return <BattleArena />;
       default:
-        return <Dashboard />;
+        return <AdventureMap onStageSelect={() => {}} />;
     }
   };
 
