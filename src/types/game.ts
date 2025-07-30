@@ -84,8 +84,8 @@ export interface GameContextType {
   isLoading: boolean;
   
   // Auth functions
-  login: (email: string, password: string) => Promise<boolean>;
-  register: (username: string, email: string, password: string) => Promise<boolean>;
+  login: () => Promise<boolean>;
+  register: () => Promise<boolean>;
   logout: () => void;
   
   // Shadow functions

@@ -72,61 +72,25 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     localStorage.setItem('shadowmage_shadows', JSON.stringify(shadows));
   }, [shadows]);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
-    setIsLoading(true);
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    const savedUsers = JSON.parse(localStorage.getItem('shadowmage_users') || '[]');
-    const foundUser = savedUsers.find((u: any) => u.email === email && u.password === password);
-    
-    if (foundUser) {
-      const { password: _, ...userWithoutPassword } = foundUser;
-      setUser(userWithoutPassword);
-      toast.success('Welcome back, Shadow Mage!');
-      setIsLoading(false);
-      return true;
-    }
-    
-    toast.error('Invalid credentials');
-    setIsLoading(false);
-    return false;
-  };
-
-  const register = async (username: string, email: string, password: string): Promise<boolean> => {
-    setIsLoading(true);
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    const savedUsers = JSON.parse(localStorage.getItem('shadowmage_users') || '[]');
-    
-    if (savedUsers.find((u: any) => u.email === email)) {
-      toast.error('Email already registered');
-      setIsLoading(false);
-      return false;
-    }
-    
-    const newUser: User & { password: string } = {
-      id: Date.now().toString(),
-      username,
-      email,
-      password,
+  const login = async (): Promise<boolean> => {
+    // Auto-login with guest user
+    const guestUser: User = {
+      id: 'guest_' + Date.now().toString(),
+      username: 'Shadow Mage',
+      email: 'guest@shadowrealm.com',
       level: 1,
       experience: 0,
       shadowTokens: 100,
       createdAt: new Date()
     };
     
-    savedUsers.push(newUser);
-    localStorage.setItem('shadowmage_users', JSON.stringify(savedUsers));
-    
-    const { password: _, ...userWithoutPassword } = newUser;
-    setUser(userWithoutPassword);
+    setUser(guestUser);
     toast.success('Welcome to the Shadow Realm!');
-    setIsLoading(false);
     return true;
+  };
+
+  const register = async (): Promise<boolean> => {
+    return login(); // Same as login for guest mode
   };
 
   const logout = () => {
