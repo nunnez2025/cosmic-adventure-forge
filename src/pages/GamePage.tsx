@@ -4,14 +4,22 @@ import { ShadowManagement } from '@/components/game/ShadowManagement';
 import { ShadowCreation } from '@/components/game/ShadowCreation';
 import { BattleArena } from '@/components/game/BattleArena';
 import { AdventureMap } from '@/components/adventure/AdventureMap';
+import { AdventureStage } from '@/types/adventure';
+import { toast } from 'sonner';
 
 export const GamePage: React.FC = () => {
   const [currentTab, setCurrentTab] = useState('adventure');
 
+  const handleStageSelect = (stage: AdventureStage) => {
+    // This function is now handled internally in the AdventureMap component
+    // but we keep it here for future expansion
+    console.log('Stage selected:', stage.name);
+  };
+
   const renderCurrentTab = () => {
     switch (currentTab) {
       case 'adventure':
-        return <AdventureMap onStageSelect={() => {}} />;
+        return <AdventureMap onStageSelect={handleStageSelect} />;
       case 'shadows':
         return <ShadowManagement />;
       case 'forge':
@@ -19,7 +27,7 @@ export const GamePage: React.FC = () => {
       case 'battle':
         return <BattleArena />;
       default:
-        return <AdventureMap onStageSelect={() => {}} />;
+        return <AdventureMap onStageSelect={handleStageSelect} />;
     }
   };
 
