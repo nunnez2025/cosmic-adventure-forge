@@ -6,6 +6,8 @@ import { MapPin, Sword, Users, Trophy, Lock } from 'lucide-react';
 import { useGameContext } from '@/context/GameContext';
 import { AdventureStage, AdventureProgress } from '@/types/adventure';
 import { cn } from '@/lib/utils';
+import { AdventureStageDetail } from './AdventureStageDetail';
+import { toast } from 'sonner';
 
 interface AdventureMapProps {
   onStageSelect: (stage: AdventureStage) => void;
@@ -16,6 +18,7 @@ export const AdventureMap: React.FC<AdventureMapProps> = ({ onStageSelect }) => 
   const [stages, setStages] = useState<AdventureStage[]>([]);
   const [progress, setProgress] = useState<AdventureProgress | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [selectedStage, setSelectedStage] = useState<AdventureStage | null>(null);
 
   // Mock initial stages - later will be AI generated
   useEffect(() => {
@@ -54,17 +57,36 @@ export const AdventureMap: React.FC<AdventureMapProps> = ({ onStageSelect }) => 
       }
     ];
 
-    setStages(initialStages);
-    setProgress({
-      currentStage: 'mystical_forest_1',
-      completedStages: [],
-      unlockedStages: ['mystical_forest_1'],
-      totalExperience: 0,
-      shadowsDiscovered: 0,
-      battlesWon: 0,
-      achievements: []
-    });
+    // Load progress from localStorage if available
+    const savedProgress = localStorage.getItem('shadowmage_adventure_progress');
+    const savedStages = localStorage.getItem('shadowmage_adventure_stages');
+    
+    if (savedProgress && savedStages) {
+      setProgress(JSON.parse(savedProgress));
+      setStages(JSON.parse(savedStages));
+    } else {
+      setStages(initialStages);
+      setProgress({
+        currentStage: 'mystical_forest_1',
+        completedStages: [],
+        unlockedStages: ['mystical_forest_1'],
+        totalExperience: 0,
+        shadowsDiscovered: 0,
+        battlesWon: 0,
+        achievements: []
+      });
+    }
   }, []);
+
+  // Save progress and stages to localStorage when they change
+  useEffect(() => {
+    if (progress) {
+      localStorage.setItem('shadowmage_adventure_progress', JSON.stringify(progress));
+    }
+    if (stages.length > 0) {
+      localStorage.setItem('shadowmage_adventure_stages', JSON.stringify(stages));
+    }
+  }, [progress, stages]);
 
   const isStageUnlocked = (stage: AdventureStage): boolean => {
     if (!stage.unlockRequirements) return true;
@@ -75,10 +97,81 @@ export const AdventureMap: React.FC<AdventureMapProps> = ({ onStageSelect }) => 
 
   const generateAIStage = async (baseStage: AdventureStage) => {
     setIsGenerating(true);
-    // TODO: Implement AI generation when APIs are configured
-    console.log('Generating AI content for stage:', baseStage.name);
+    // Simulate AI generation
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // Set the selected stage to enter it
+    const stageToEnter = stages.find(s => s.id === baseStage.id);
+    if (stageToEnter) {
+      setSelectedStage(stageToEnter);
+    }
+    
     setIsGenerating(false);
   };
+
+  const handleStageComplete = (stageId: string) => {
+    // Find the stage
+    const completedStage = stages.find(s => s.id === stageId);
+    if (!completedStage) return;
+    
+    // Update stage completion status
+    setStages(prev => prev.map(s => 
+      s.id === stageId ? { ...s, isCompleted: true } : s
+    ));
+    
+    // Update progress
+    if (progress) {
+      const updatedProgress = { ...progress };
+      
+      // Add to completed stages if not already there
+      if (!updatedProgress.completedStages.includes(stageId)) {
+        updatedProgress.completedStages.push(stageId);
+      }
+      
+      // Unlock next stages
+      const nextStages = stages.filter(s => 
+        s.unlockRequirements?.some(req => req === stageId) &&
+        !updatedProgress.unlockedStages.includes(s.id)
+      );
+      
+      nextStages.forEach(s => {
+        updatedProgress.unlockedStages.push(s.id);
+      });
+      
+      // Update current stage to the next unlocked stage
+      if (nextStages.length > 0) {
+        updatedProgress.currentStage = nextStages[0].id;
+      }
+      
+      // Add rewards
+      const experienceReward = completedStage.rewards
+        .filter(r => r.type === 'experience')
+        .reduce((sum, r) => sum + (r.amount || 0), 0);
+      
+      updatedProgress.totalExperience += experienceReward;
+      updatedProgress.battlesWon += 2; // Assume 2 battles won per stage
+      updatedProgress.shadowsDiscovered += 1; // Assume 1 new shadow discovered
+      
+      setProgress(updatedProgress);
+      
+      // Show completion message
+      toast.success(`Stage completed! Unlocked ${nextStages.length} new areas.`);
+    }
+    
+    // Return to map
+    setSelectedStage(null);
+  };
+
+  // If a stage is selected, show the stage detail view
+  if (selectedStage) {
+    return (
+      <AdventureStageDetail 
+        stage={selectedStage} 
+        onBack={() => setSelectedStage(null)}
+        onComplete={handleStageComplete}
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -138,7 +231,7 @@ export const AdventureMap: React.FC<AdventureMapProps> = ({ onStageSelect }) => 
                 completed && "border-green-500/50"
               )}
               style={{ background: stage.background }}
-              onClick={() => unlocked && onStageSelect(stage)}
+              onClick={() => unlocked && setSelectedStage(stage)}
             >
               <CardContent className="p-6 space-y-4">
                 <div className="flex items-start justify-between">
