@@ -1,164 +1,120 @@
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useGameContext } from '@/context/GameContext';
+// src/context/GameContext.tsx
+import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
 import { Shadow } from '@/types/game';
-import { toast } from 'sonner';
-import { Sword, Sparkles, Zap, Shield, Coins } from 'lucide-react';
+import { generateShadowId } from '@/lib/shadow'; // ✅ fix import
 
-const classDescriptions = {
-  warrior: {
-    icon: Sword,
-    title: 'Shadow Warrior',
-    description: 'Masters of melee combat with high health and defense. Specializes in close-range devastating attacks.',
-    stats: 'High Health & Defense, Moderate Attack'
-  },
-  mage: {
-    icon: Sparkles,
-    title: 'Shadow Mage',
-    description: 'Wielders of arcane magic with powerful spells. High mana pool and magical damage.',
-    stats: 'High Mana & Magic Attack, Low Defense'
-  },
-  archer: {
-    icon: Zap,
-    title: 'Shadow Archer',
-    description: 'Precise ranged combatants with high speed and accuracy. Masters of hit-and-run tactics.',
-    stats: 'High Speed & Precision, Moderate Health'
-  },
-  assassin: {
-    icon: Shield,
-    title: 'Shadow Assassin',
-    description: 'Stealth specialists with critical strikes and debuffs. Highest damage potential.',
-    stats: 'Highest Attack & Speed, Lowest Health'
+// ---------- TYPES ----------
+type User = {
+  id: string;
+  name: string;
+  shadowTokens: number;
+};
+
+type GameState = {
+  user: User | null;
+  shadows: Shadow[];
+  isLoading: boolean;
+};
+
+type GameAction =
+  | { type: 'SET_USER'; payload: User }
+  | { type: 'SET_LOADING'; payload: boolean }
+  | { type: 'ADD_SHADOW'; payload: Shadow }
+  | { type: 'UPDATE_TOKENS'; payload: number };
+
+// ---------- REDUCER ----------
+const gameReducer = (state: GameState, action: GameAction): GameState => {
+  switch (action.type) {
+    case 'SET_USER':
+      return { ...state, user: action.payload };
+    case 'SET_LOADING':
+      return { ...state, isLoading: action.payload };
+    case 'ADD_SHADOW':
+      return { ...state, shadows: [...state.shadows, action.payload] };
+    case 'UPDATE_TOKENS':
+      if (!state.user) return state;
+      return {
+        ...state,
+        user: { ...state.user, shadowTokens: state.user.shadowTokens + action.payload },
+      };
+    default:
+      return state;
   }
 };
 
-export const ShadowCreation: React.FC = () => {
-  const [name, setName] = useState('');
-  const [selectedClass, setSelectedClass] = useState<Shadow['class'] | ''>('');
-  const { createShadow, isLoading, user } = useGameContext();
+// ---------- CONTEXT ----------
+const GameContext = createContext<{
+  state: GameState;
+  createShadow: (name: string, cls: Shadow['class']) => Promise<void>;
+  login: () => Promise<void>;
+} | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!name.trim()) {
-      toast.error('Please enter a name for your shadow');
-      return;
-    }
+// ---------- PROVIDER ----------
+export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [state, dispatch] = useReducer(gameReducer, {
+    user: null,
+    shadows: [],
+    isLoading: false,
+  });
 
-    if (!selectedClass) {
-      toast.error('Please select a class for your shadow');
-      return;
-    }
-
-    if (!user || user.shadowTokens < 20) {
-      toast.error('Insufficient Shadow Tokens. You need 20 tokens to create a shadow.');
-      return;
-    }
-
-    try {
-      await createShadow(name.trim(), selectedClass);
-      setName('');
-      setSelectedClass('');
-    } catch (error) {
-      toast.error('Failed to create shadow. Please try again.');
-    }
+  // simula login
+  const login = async () => {
+    dispatch({ type: 'SET_LOADING', payload: true });
+    await new Promise((r) => setTimeout(r, 800));
+    dispatch({
+      type: 'SET_USER',
+      payload: { id: 'player-1', name: 'ShadowLord', shadowTokens: 100 },
+    });
+    dispatch({ type: 'SET_LOADING', payload: false });
   };
 
+  // criação de sombra com ID seguro
+  const createShadow = async (name: string, cls: Shadow['class']) => {
+    if (!state.user || state.user.shadowTokens < 20) return;
+
+    const newShadow: Shadow = {
+      id: generateShadowId(), // ✅ substitui crypto.randomUUID()
+      name,
+      class: cls,
+      level: 1,
+      health: Math.floor(Math.random() * 50) + 50,
+      attack: Math.floor(Math.random() * 30) + 20,
+      defense: Math.floor(Math.random() * 30) + 10,
+      speed: Math.floor(Math.random() * 20) + 10,
+      rarity: ['common', 'rare', 'epic', 'legendary'][Math.floor(Math.random() * 4)] as Shadow['rarity'],
+      skills: [],
+    };
+
+    dispatch({ type: 'ADD_SHADOW', payload: newShadow });
+    dispatch({ type: 'UPDATE_TOKENS', payload: -20 });
+
+    // salva no localStorage
+    const updatedShadows = [...state.shadows, newShadow];
+    localStorage.setItem('shadows', JSON.stringify(updatedShadows));
+    localStorage.setItem(
+      'user',
+      JSON.stringify({ ...state.user, shadowTokens: state.user.shadowTokens - 20 })
+    );
+  };
+
+  // carrega dados ao montar
+  useEffect(() => {
+    const savedUser = localStorage.getItem('user');
+    const savedShadows = localStorage.getItem('shadows');
+    if (savedUser) dispatch({ type: 'SET_USER', payload: JSON.parse(savedUser) });
+    if (savedShadows) dispatch({ type: 'ADD_SHADOW', payload: JSON.parse(savedShadows) });
+  }, []);
+
   return (
-    <Card className="w-full max-w-2xl mx-auto shadow-mystical border-primary/30 bg-card/80 backdrop-blur-lg">
-      <CardHeader className="text-center">
-        <CardTitle className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-          Forge a New Shadow
-        </CardTitle>
-        <CardDescription className="text-muted-foreground">
-          Summon a loyal shadow companion to fight alongside you in the realm
-        </CardDescription>
-        <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-          <Coins className="w-4 h-4" />
-          <span>Cost: 20 Shadow Tokens</span>
-          <span>•</span>
-          <span>Available: {user?.shadowTokens || 0}</span>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-2">
-            <Label htmlFor="shadowName" className="text-foreground">Shadow Name</Label>
-            <Input
-              id="shadowName"
-              type="text"
-              placeholder="Enter your shadow's name..."
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="bg-input/50 border-border/50 focus:border-primary focus:ring-primary/20"
-              disabled={isLoading}
-              maxLength={20}
-            />
-          </div>
-
-          <div className="space-y-3">
-            <Label className="text-foreground">Shadow Class</Label>
-            <Select value={selectedClass} onValueChange={(value) => setSelectedClass(value as Shadow['class'])}>
-              <SelectTrigger className="bg-input/50 border-border/50 focus:border-primary focus:ring-primary/20">
-                <SelectValue placeholder="Choose a class for your shadow" />
-              </SelectTrigger>
-              <SelectContent className="bg-popover border-border/50">
-                {Object.entries(classDescriptions).map(([key, classInfo]) => (
-                  <SelectItem key={key} value={key} className="focus:bg-accent/50">
-                    <div className="flex items-center gap-2">
-                      <classInfo.icon className="w-4 h-4" />
-                      {classInfo.title}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {selectedClass && (
-            <Card className="border-primary/20 bg-accent/20">
-              <CardContent className="pt-4">
-                <div className="flex items-start gap-3">
-                  {(() => {
-                    const IconComponent = classDescriptions[selectedClass].icon;
-                    return <IconComponent className="w-6 h-6 text-primary mt-1" />;
-                  })()}
-                  <div className="space-y-2">
-                    <h3 className="font-semibold text-foreground">
-                      {classDescriptions[selectedClass].title}
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      {classDescriptions[selectedClass].description}
-                    </p>
-                    <p className="text-xs text-primary font-medium">
-                      {classDescriptions[selectedClass].stats}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          <Button 
-            type="submit" 
-            className="w-full" 
-            variant="mystical"
-            disabled={isLoading || !user || user.shadowTokens < 20}
-          >
-            {isLoading ? 'Summoning Shadow...' : 'Forge Shadow'}
-          </Button>
-        </form>
-
-        <div className="mt-6 text-center">
-          <p className="text-xs text-muted-foreground">
-            Each shadow is unique with randomized rarity and stats. Higher rarity shadows have enhanced abilities.
-          </p>
-        </div>
-      </CardContent>
-    </Card>
+    <GameContext.Provider value={{ state, createShadow, login }}>
+      {children}
+    </GameContext.Provider>
   );
+};
+
+// ---------- HOOK ----------
+export const useGameContext = () => {
+  const context = useContext(GameContext);
+  if (!context) throw new Error('useGameContext must be used within GameProvider');
+  return context;
 };
