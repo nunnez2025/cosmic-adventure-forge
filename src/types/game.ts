@@ -27,6 +27,7 @@ export interface Shadow {
   skills: Skill[];
   ownerId: string;
   createdAt: Date;
+  imageUrl?: string; // URL for the shadow's image
 }
 
 export interface Skill {

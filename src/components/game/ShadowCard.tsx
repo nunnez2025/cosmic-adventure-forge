@@ -2,12 +2,15 @@ import { Shadow } from '@/types/game';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Sword, Shield, Zap, Heart, Sparkles } from 'lucide-react';
+import { Sword, Shield, Zap, Heart, Sparkles, Image as ImageIcon } from 'lucide-react';
+import { AspectRatio } from '@/components/ui/aspect-ratio';
+import { useState } from 'react';
 
 interface ShadowCardProps {
   shadow: Shadow;
   onClick?: () => void;
   selected?: boolean;
+  showImage?: boolean;
 }
 
 const rarityColors = {
@@ -17,6 +20,13 @@ const rarityColors = {
   legendary: 'bg-amber-500/20 text-amber-400 border-amber-500/50'
 };
 
+const rarityGlows = {
+  common: '',
+  rare: 'shadow-blue-500/30',
+  epic: 'shadow-purple-500/30',
+  legendary: 'shadow-amber-500/30 mystical-glow'
+};
+
 const classIcons = {
   warrior: Sword,
   mage: Sparkles,
@@ -24,12 +34,18 @@ const classIcons = {
   assassin: Shield
 };
 
-export const ShadowCard: React.FC<ShadowCardProps> = ({ shadow, onClick, selected = false }) => {
+export const ShadowCard: React.FC<ShadowCardProps> = ({ 
+  shadow, 
+  onClick, 
+  selected = false,
+  showImage = true
+}) => {
   const ClassIcon = classIcons[shadow.class];
   const healthPercentage = (shadow.stats.health / shadow.stats.maxHealth) * 100;
   const manaPercentage = (shadow.stats.mana / shadow.stats.maxMana) * 100;
   const experienceToNext = shadow.level * 100;
   const expPercentage = (shadow.experience / experienceToNext) * 100;
+  const [imageError, setImageError] = useState(false);
 
   return (
     <Card 
@@ -56,6 +72,31 @@ export const ShadowCard: React.FC<ShadowCardProps> = ({ shadow, onClick, selecte
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Shadow Image */}
+        {showImage && shadow.imageUrl && !imageError && (
+          <AspectRatio ratio={1} className="overflow-hidden rounded-md mb-4">
+            <img 
+              src={shadow.imageUrl} 
+              alt={`${shadow.name} - ${shadow.class} shadow`}
+              className={`object-cover w-full h-full transition-all ${rarityGlows[shadow.rarity]}`}
+              onError={() => setImageError(true)}
+              loading="lazy"
+            />
+          </AspectRatio>
+        )}
+
+        {/* Fallback if image fails to load or no image */}
+        {showImage && (!shadow.imageUrl || imageError) && (
+          <div className={`aspect-square rounded-md bg-accent/20 flex items-center justify-center mb-4 ${rarityGlows[shadow.rarity]}`}>
+            <div className="text-center">
+              <ImageIcon className="w-12 h-12 mx-auto text-muted-foreground/40" />
+              <span className="text-xs text-muted-foreground mt-2 block">
+                {shadow.name}
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* Health Bar */}
         <div className="space-y-1">
           <div className="flex justify-between text-sm">
