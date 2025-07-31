@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { GameContextType, User, Shadow, Battle, BattleTurn, Skill } from '../types/game';
 import { toast } from 'sonner';
+import { generateShadowImageUrl } from '@/lib/imageApi';
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
 
@@ -34,6 +35,14 @@ const SHADOW_SKILLS: Record<Shadow['class'], Skill[]> = {
     { id: 'smoke_bomb', name: 'Smoke Bomb', description: 'Become invisible for 2 turns', manaCost: 18, cooldown: 5, type: 'buff' },
     { id: 'poison_blade', name: 'Poison Blade', description: 'Poison on hit', damage: 20, manaCost: 15, cooldown: 3, type: 'attack' }
   ]
+};
+
+// Shadow emotions for image generation
+const SHADOW_EMOTIONS: Record<Shadow['class'], string> = {
+  warrior: 'courage',
+  mage: 'wisdom',
+  archer: 'precision',
+  assassin: 'stealth'
 };
 
 interface GameProviderProps {
@@ -147,6 +156,9 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     else if (rarityRoll < 0.95) rarity = 'epic';
     else rarity = 'legendary';
     
+    // Generate image URL for the shadow
+    const imageUrl = generateShadowImageUrl(name, shadowClass, rarity);
+    
     const newShadow: Shadow = {
       id: Date.now().toString(),
       name,
@@ -157,7 +169,8 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       stats: generateShadowStats(rarity, shadowClass),
       skills: SHADOW_SKILLS[shadowClass],
       ownerId: user.id,
-      createdAt: new Date()
+      createdAt: new Date(),
+      imageUrl // Add the generated image URL
     };
     
     setShadows(prev => [...prev, newShadow]);
@@ -202,10 +215,14 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   const generateOpponent = (playerShadow: Shadow): Shadow => {
     const classes: Shadow['class'][] = ['warrior', 'mage', 'archer', 'assassin'];
     const randomClass = classes[Math.floor(Math.random() * classes.length)];
+    const opponentName = `Dark ${randomClass.charAt(0).toUpperCase() + randomClass.slice(1)}`;
+    
+    // Generate image URL for the opponent
+    const imageUrl = generateShadowImageUrl(opponentName, randomClass, playerShadow.rarity);
     
     return {
       id: 'opponent_' + Date.now(),
-      name: `Dark ${randomClass.charAt(0).toUpperCase() + randomClass.slice(1)}`,
+      name: opponentName,
       rarity: playerShadow.rarity,
       class: randomClass,
       level: playerShadow.level,
@@ -213,7 +230,8 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       stats: generateShadowStats(playerShadow.rarity, randomClass),
       skills: SHADOW_SKILLS[randomClass],
       ownerId: 'ai',
-      createdAt: new Date()
+      createdAt: new Date(),
+      imageUrl // Add the generated image URL
     };
   };
 

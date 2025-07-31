@@ -7,12 +7,22 @@ import { useGameContext } from '@/context/GameContext';
 import { ShadowCard } from './ShadowCard';
 import { Skill } from '@/types/game';
 import { toast } from 'sonner';
-import { Sword, Shield, Heart, Sparkles, Clock, Target } from 'lucide-react';
+import { Sword, Shield, Heart, Sparkles, Clock, Target, Image as ImageIcon } from 'lucide-react';
+import { AspectRatio } from '@/components/ui/aspect-ratio';
+
+const rarityGlows = {
+  common: '',
+  rare: 'shadow-blue-500/30',
+  epic: 'shadow-purple-500/30',
+  legendary: 'shadow-amber-500/30 mystical-glow'
+};
 
 export const BattleArena: React.FC = () => {
   const { getShadows, currentBattle, startBattle, performBattleAction, endBattle, isLoading } = useGameContext();
   const [selectedShadowId, setSelectedShadowId] = useState<string>('');
   const [selectedSkill, setSelectedSkill] = useState<Skill | null>(null);
+  const [playerImageError, setPlayerImageError] = useState(false);
+  const [opponentImageError, setOpponentImageError] = useState(false);
   const shadows = getShadows();
 
   const handleStartBattle = async () => {
@@ -21,6 +31,10 @@ export const BattleArena: React.FC = () => {
       return;
     }
 
+    // Reset image errors when starting a new battle
+    setPlayerImageError(false);
+    setOpponentImageError(false);
+    
     await startBattle(selectedShadowId, 'pve');
   };
 
@@ -147,6 +161,28 @@ export const BattleArena: React.FC = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Player Shadow Image */}
+            {playerShadow.imageUrl && !playerImageError ? (
+              <AspectRatio ratio={1} className="overflow-hidden rounded-md bg-accent/20 border border-primary/30">
+                <img 
+                  src={playerShadow.imageUrl} 
+                  alt={`${playerShadow.name} - ${playerShadow.class} shadow`}
+                  className={`object-cover w-full h-full transition-all ${rarityGlows[playerShadow.rarity]}`}
+                  onError={() => setPlayerImageError(true)}
+                  loading="lazy"
+                />
+              </AspectRatio>
+            ) : (
+              <div className={`aspect-square rounded-md bg-accent/20 flex items-center justify-center border border-primary/30 ${rarityGlows[playerShadow.rarity]}`}>
+                <div className="text-center">
+                  <ImageIcon className="w-12 h-12 mx-auto text-primary/40" />
+                  <span className="text-xs text-muted-foreground mt-2 block">
+                    {playerShadow.name}
+                  </span>
+                </div>
+              </div>
+            )}
+
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="flex items-center gap-1 text-red-400">
@@ -206,6 +242,28 @@ export const BattleArena: React.FC = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Opponent Shadow Image */}
+            {opponentShadow.imageUrl && !opponentImageError ? (
+              <AspectRatio ratio={1} className="overflow-hidden rounded-md bg-accent/20 border border-blood/30">
+                <img 
+                  src={opponentShadow.imageUrl} 
+                  alt={`${opponentShadow.name} - ${opponentShadow.class} shadow`}
+                  className={`object-cover w-full h-full transition-all ${rarityGlows[opponentShadow.rarity]}`}
+                  onError={() => setOpponentImageError(true)}
+                  loading="lazy"
+                />
+              </AspectRatio>
+            ) : (
+              <div className={`aspect-square rounded-md bg-accent/20 flex items-center justify-center border border-blood/30 ${rarityGlows[opponentShadow.rarity]}`}>
+                <div className="text-center">
+                  <ImageIcon className="w-12 h-12 mx-auto text-red-500/40" />
+                  <span className="text-xs text-muted-foreground mt-2 block">
+                    {opponentShadow.name}
+                  </span>
+                </div>
+              </div>
+            )}
+
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="flex items-center gap-1 text-red-400">
