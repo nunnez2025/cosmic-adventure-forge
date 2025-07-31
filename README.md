@@ -79,3 +79,18 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 - Inspired by classic RPGs and monster-collecting games
 - Special thanks to the shadcn/ui team for the beautiful component library
+# 🌌 Cosmic Adventure Forge
+
+A forge for creating cosmic adventures — a web-based 2D space game builder and playground.
+
+✨ **Status**: Protótipo inicial  
+🎮 **Tech**: React + Phaser.js  
+
+---
+
+## 🚀 Como rodar localmente
+
+1. Clone o repositório:
+   ```bash
+   git clone https://github.com/nunnez2025/cosmic-adventure-forge.git
+   cd cosmic-adventure-forge
